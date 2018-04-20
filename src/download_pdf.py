@@ -2,8 +2,7 @@ import sys
 import pandas as pd
 import requests
 
-
-def get_pdf(path):
+def download_pdf(path):
     references = pd.read_csv(path)
     for idx, row in references.iterrows():
         try:
@@ -18,4 +17,4 @@ def get_pdf(path):
 if __name__ == '__main__':
     topic = sys.argv[1]
     path = "dataset/" + topic + "/" + topic + " references for training set.csv"
-    get_pdf(path)
+    download_pdf(path)
