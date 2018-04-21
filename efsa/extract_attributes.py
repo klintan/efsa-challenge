@@ -1,4 +1,4 @@
-from src.text_squad_transform import load_attributes, get_attribute_description_mapping
+from efsa.text_squad_transform import load_attributes, get_attribute_description_mapping
 
 
 def extract_attributes():

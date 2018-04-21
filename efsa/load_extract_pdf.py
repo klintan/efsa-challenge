@@ -7,6 +7,20 @@ from corvid.table_extraction import pdf_to_xml_parser
 import json
 import io
 
+import yaml
+import logging
+#from logging.config import fileConfig
+
+#fileConfig('logging_config.ini')
+log = logging.getLogger()
+
+from efsa.exceptions import DirectoryEmptyError
+
+# load config
+with open("config.yml", 'r') as ymlfile:
+    config = yaml.load(ymlfile)
+
+PDF_PARSER_URL = config['pdf-parser']['url']
 
 def load_extract_all(topic):
     articles_text = load_extract_text(topic)
@@ -14,20 +28,25 @@ def load_extract_all(topic):
     articles_tables = load_extract_table_data(topic)
 
 
-def load_extract_text(topic, save_json=False):
+def load_extract_text(pdf_path, topic, save_json=False):
+    if len(os.listdir(pdf_path)) == 0:
+        raise DirectoryEmptyError("Article PDF folder empty: %s " % pdf_path)
+
     raw_articles = []
-    for article in os.listdir("data/" + topic):
+    for article in os.listdir(pdf_path):
         try:
-            with open("data/" + topic + "/" + article, 'rb') as payload:
+            with open(pdf_path + "/" + article, 'rb') as payload:
                 headers = {"Content-type": "application/pdf"}
-                url = "http://localhost:8080/v1"
-                r = requests.post(url, headers=headers, data=payload)
+                r = requests.post(PDF_PARSER_URL, headers=headers, data=payload)
             raw_articles.append(r.json())
         except Exception as e:
             print(e)
     if save_json:
-        with open("data/" + topic + "/raw_json/articles.json") as f:
-            f.write(json.dumps(raw_articles))
+        save_path = "data/" + topic + "/raw_json/articles.json"
+        if not os.path.isfile(save_path):
+            with open(save_path, 'w') as f:
+                f.write(json.dumps(raw_articles))
+        log.warning("Article json already exists, remove before overwriting")
     return raw_articles
 
 

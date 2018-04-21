@@ -1,5 +1,5 @@
 import pytest
-from src.load_extract_pdf import load_extract_text
+from efsa.load_extract_pdf import load_extract_text
 import os
 
 

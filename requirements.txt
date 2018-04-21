@@ -1,3 +1,4 @@
 git+git://github.com/allenai/corvid.git
 pillow
 pdf2image
+pyaml
