@@ -18,7 +18,7 @@ def get_topics_paths(topic):
     return (pdf_dir, feat_desc_dir, attribute_train_dir)
 
 
-def run_pipeline(topic, parse=True, mode="train", pdf_dir=None, feat_desc_dir=None, attribute_train_dir=None,
+def run_pipeline(topic, parse=True, mode="train", save_squad=False, pdf_dir=None, feat_desc_dir=None, attribute_train_dir=None,
                  attribute_val_dir=None):
     '''
     Main pipeline for attribute extraction
@@ -59,13 +59,13 @@ def run_pipeline(topic, parse=True, mode="train", pdf_dir=None, feat_desc_dir=No
 
     # Load auxiliary data
     if mode == "train":
-        groundtruth_data = pd.read_csv(attribute_train_dir)
+        groundtruth_data = pd.read_csv(attribute_train_dir, dtype=str, encoding="utf-8")
 
     attributes = pd.read_csv(feat_desc_dir, dtype=str, encoding="utf-8")
 
     # 1. Extract data (text, figures and tables) from PDF in PDF folder (all modes)
     # probably create a "article"-class here which holds all info in one obj, for now only text
-    if not parse:
+    if parse:
         articles = load_extract_text(pdf_dir, topic, save_json=True)
     else:
         with open("data/" + topic + "/raw_json/articles.json") as art_f:
@@ -73,9 +73,13 @@ def run_pipeline(topic, parse=True, mode="train", pdf_dir=None, feat_desc_dir=No
 
     # 2. Format data to SQuAD format
     if mode == "train":
-        squad = text_squad_transform.get_context_question_answer_triples(topic, groundtruth_data, articles, attributes)
+        squad = text_squad_transform.get_context_question_answer_triples(topic, groundtruth_data, articles, attributes, save_article=True)
     else:
         squad = text_squad_transform.get_context_question_pair(articles, attributes, topic=None)
+
+    if save_squad:
+        with open("data/" + topic + '/all_squad.json', 'w') as squad_f:
+            squad_f.write(json.dumps(squad))
 
     # 3. (optional) train
     if mode == "train":
@@ -86,14 +90,25 @@ def run_pipeline(topic, parse=True, mode="train", pdf_dir=None, feat_desc_dir=No
     # 5. build csv output file and post-processing of data
 
 
+def str2bool(v):
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process some integers.')
     parser.add_argument('--topic', type=str,
                         help='name of the topic', default="AHAW VBD")
     parser.add_argument('--mode', type=str,
                         help='name of the topic', default="train")
-    parser.add_argument('--parse', type=bool,
-                        help='parse pdfs or used already extracted data', default="true")
+    parser.add_argument('--parse', type=str2bool,
+                        help='parse pdfs or used already extracted data', default="True")
+    parser.add_argument('--save_squad', type=str2bool,
+                        help='save squad data as json', default="False")
 
     args = parser.parse_args()
-    run_pipeline(args.topic, parse=args.parse)
+    run_pipeline(args.topic, parse=args.parse, save_squad=args.save_squad)

@@ -38,7 +38,10 @@ def load_extract_text(pdf_path, topic, save_json=False):
             with open(pdf_path + "/" + article, 'rb') as payload:
                 headers = {"Content-type": "application/pdf"}
                 r = requests.post(PDF_PARSER_URL, headers=headers, data=payload)
-            raw_articles.append(r.json())
+
+            article_data = r.json()
+            article_data['refId'] = os.path.splitext(article)[0]
+            raw_articles.append(article_data)
         except Exception as e:
             print(e)
     if save_json:
